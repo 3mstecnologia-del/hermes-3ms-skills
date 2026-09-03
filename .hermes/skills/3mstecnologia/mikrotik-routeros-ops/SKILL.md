@@ -117,16 +117,19 @@ Não use `print detail` na interface WireGuard nem `export show-sensitive` em re
 
 Padrão: **mutação → evidência → leitura independente → validação → próxima mutação**.
 
-- Não agregar mutações independentes num único bloco SSH.
-- Capturar `correlation_id`/`order`, timestamps, comando sanitizado, `transport_ok`, `exit_status`, `stdout`, `stderr`.
+- Não agregar mutações independentes num único bloco SSH (o helper rejeita `;` / `&&` / dois verbos).
+- Capturar `correlation_id`/`order`, timestamps, comando sanitizado, `transport_ok`, `exit_status`, `stdout`, `stderr`, **pré e pós-estado**.
 - Transporte SSH e erro de CLI RouterOS são independentes.
 - `exit != 0` **não** prova que nada foi aplicado; `exit == 0` **não** prova o estado desejado.
 - Sem exit/stdout/stderr: resultado `indeterminate` — **nunca PASS**; **não** rollback cego.
 - Pós-estado: consulta determinística (`get` / `print where` / `:put [/… get …]`). Campo ausente no `print` compacto = `inconclusive`, não `absent`.
+- Retry: pós-condição completa. Identidade certa com atributos errados = `mismatch`, não `applied`.
+- `failed-after-apply` exige delta pré→pós; estado prévio já correto + comando falho **não** é apply.
 - Divergência ou evidência incompleta: **interromper** a sequência.
-- Rollback só após estado reconciliado. Nunca `/system reset-configuration`.
+- Rollback só com ownership/delta confirmado. Nunca `/system reset-configuration`.
+- Payload público: sanitizar expected, notes, stdout, stderr e demais campos (incluindo valores quoted com espaço).
 
-Resultados: `applied` | `not-applied` | `failed-after-apply` | `mismatch` | `indeterminate`.
+Resultados: `applied` | `already-satisfied` | `not-applied` | `failed-after-apply` | `mismatch` | `indeterminate`.
 
 Detalhe e consultas: [references/safe-ssh-mutation.md](references/safe-ssh-mutation.md). Helper testável: [tests/safe_routeros_exec.py](tests/safe_routeros_exec.py).
 

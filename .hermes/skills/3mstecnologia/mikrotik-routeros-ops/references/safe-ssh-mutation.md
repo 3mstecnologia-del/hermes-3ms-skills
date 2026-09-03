@@ -28,8 +28,8 @@ MUTAÇÃO → CAPTURA DE EVIDÊNCIA → LEITURA INDEPENDENTE → VALIDAÇÃO DO 
 Para **cada** mutação (`add` / `set` / `remove` / `enable` / `disable` / `move`):
 
 1. Ler o pré-estado mínimo autoritativo (consulta específica ou `get`, não um dump amplo).
-2. Calcular o diff **fora** do RouterOS. Se o pré-estado já satisfaz a identidade, **não criar de novo** (retry idempotente).
-3. Executar **exatamente uma** mutação por fronteira de evidência (preferir uma sessão SSH por mutação).
+2. Calcular o diff **fora** do RouterOS. Se o pré-estado já satisfaz a **pós-condição completa**, não executar: `already-satisfied` (`executed=false`). Identidade existente com atributos divergentes em `add`: `mismatch` e parar — nunca `applied` automático.
+3. Executar **exatamente uma** mutação por fronteira de evidência. O helper **rejeita** `;`, `&&`, `||`, novas linhas (exceto continuação `\`) e dois verbos mutáveis no mesmo step — sem chamar o executor.
 4. Preservar, por operação:
    - `correlation_id` (mesmo fluxo) e `order` (1, 2, 3…);
    - `started_at` / `finished_at`;
@@ -39,19 +39,22 @@ Para **cada** mutação (`add` / `set` / `remove` / `enable` / `disable` / `move
    - `stdout`;
    - `stderr`.
 5. Ler o pós-estado autoritativo e comparar com o estado esperado.
-6. **Parar** antes da próxima mutação se o resultado não for `applied` confirmado.
+6. **Parar** antes da próxima mutação se o resultado não for `applied` nem `already-satisfied`.
 
 ## Modelo de resultado
 
 | Resultado | Significado | Próxima mutação | Rollback |
 |-----------|-------------|-----------------|----------|
-| `applied` | Pós-estado confere; transporte e CLI sem falha | Permitida | Não |
-| `not-applied` | Leitura autoritativa confirma que a alteração **não** está presente | Bloqueada | Não (nada a desfazer) |
-| `failed-after-apply` | Execução falhou (exit ≠ 0, CLI error ou transporte) **mas** o pós-estado confere | Bloqueada | Não cego — o objeto existe |
-| `mismatch` | Pós-estado diverge do esperado | Bloqueada | Só do objeto **confirmado** |
-| `indeterminate` | Falta exit/stdout/stderr/transporte, ou leitura inconclusiva | Bloqueada | **Proibido** até reconciliar |
+| `applied` | Mutação **executada**; pós-estado confere; transporte e CLI sem falha; evidência completa | Permitida | Não |
+| `already-satisfied` | Pré-estado já cumpria a pós-condição; **não executou** (`executed=false`). Não é PASS de mutação | Permitida | Não |
+| `not-applied` | Leitura autoritativa confirma que a alteração **não** está presente | Bloqueada | Não |
+| `failed-after-apply` | Execução falhou **e** o delta pré→pós confirma que esta tentativa aplicou o estado | Bloqueada | Não (estado desejado já está lá) |
+| `mismatch` | Pós-estado diverge do esperado | Bloqueada | Só com ownership/delta confirmado e plano específico derivado do pré-estado |
+| `indeterminate` | Falta evidência, comando agregado rejeitado, ou leitura inconclusiva | Bloqueada | **Proibido** |
 
-`PASS` operacional exige `applied`. Qualquer outro resultado **não** é PASS.
+`PASS` operacional exige `applied` (execução + evidência + pós-estado). `already-satisfied` não é PASS. Qualquer outro resultado **não** é PASS.
+
+Pós-condição por tipo: `add`/`set`/`enable`/`disable`/`move` exigem `must_exist` e propriedades esperadas; `remove` exige `must_be_absent`. `expected={}` vazio **não** vale como sucesso de `remove`.
 
 ## Validação: compacto vs determinístico
 
@@ -78,11 +81,9 @@ Não usar `print detail` na **interface** WireGuard (expõe `private-key`). Não
 
 ## Evidência e redação
 
-Persistir apenas projeção mínima. Antes de log/relatório, redigir:
+Todo payload público (`to_public_dict`) sanitiza **todos** os campos: comando, stdout, stderr, expected, observed, pre_state, notes, rollback_plan.
 
-- `password`, `secret`, `token`, `community`
-- `private-key`, `preshared-key`, `psk`
-- qualquer literal que pareça chave/community
+Redigir valores `key=value` e `key: value` com aspas simples, aspas duplas (incluindo espaços) e unquoted. Chaves: `password`, `secret`, `token`, `community`, `private-key`, `preshared-key`, `psk`, `api-key`.
 
 Placeholders em exemplos públicos: `<PASSWORD>`, `<WG_PRIVATE_KEY>`, `<SNMP_COMMUNITY>`.
 
@@ -111,6 +112,6 @@ Não encadear o próximo `add`/`set` no mesmo bloco até essa leitura confirmar.
 
 ## Rollback
 
-Rollback = comandos inversos **do objeto reconciliado** (ex.: `remove [find name=<WG_IFACE>]` se a interface existe).
+Rollback só se `executed=true`, o delta pré/pós prova que **esta** tentativa criou, removeu ou alterou o objeto, e existe `rollback_plan` específico (ex. `remove [find name=<WG_IFACE>]` ou `set` restaurando o pré-estado).
 
-Não executar rollback quando o resultado for `indeterminate` ou quando a compacta omitiu um campo que a secundária ainda não confirmou.
+Objeto que já existia antes da tentativa, evidência incompleta, `already-satisfied` ou compacto inconclusivo: rollback **proibido**. Nunca `/system reset-configuration`.

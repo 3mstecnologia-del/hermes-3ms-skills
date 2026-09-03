@@ -14,6 +14,7 @@ Contrato obrigatório para mutações RouterOS via SSH não interativo (Addresse
 - Sem rollback cego; sequência para em erro, divergência ou evidência incompleta
 - Referência: `references/safe-ssh-mutation.md`
 - Helper testável: `tests/safe_routeros_exec.py` (unittest, Docker ou `python3 -m unittest`)
+- Revisão Madalena Labs (PR #2): rejeição de comando agregado; retry pela pós-condição completa; `already-satisfied` ≠ `applied`; `must_exist`/`must_be_absent`; delta pré/pós; rollback só com ownership; redação de todo o payload público (quoted com espaço)
 
 ## [0.1.1] — 2026-09-02
 
