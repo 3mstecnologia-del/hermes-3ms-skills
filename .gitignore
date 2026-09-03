@@ -1,0 +1,30 @@
+# Segredos e runtime do Hermes
+.hermes/.env
+.hermes/auth.json
+.hermes/config.yaml
+.hermes/sessions/
+.hermes/logs/
+
+# Credenciais e chaves
+.env
+.env.*
+!.env.example
+*.gpg
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+# Python (MCP servers)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# macOS / editor
+.DS_Store
+.idea/
+.vscode/
