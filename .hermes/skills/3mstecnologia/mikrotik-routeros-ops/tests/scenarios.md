@@ -76,3 +76,28 @@ Comportamento esperado do agente. Não requer equipamento real para revisão da 
 
 **Pedido:** Adicionar um segundo peer WireGuard na mesma interface cujo `allowed-address` intersecta o de um peer já existente (ex. ambos com o mesmo `/24`, ou `10.0.0.0/16` vs `10.0.1.0/24`).  
 **Esperado:** Agente lista peers (`/interface wireguard peers print`), **detecta o overlap**, **não cria** o peer, explica que `allowed-address` seleciona o peer e não pode se sobrepor na mesma interface, e pede revisão dos prefixos. Não “corrigir” silenciosamente com `0.0.0.0/0`.
+
+## 16. Bloco SSH com várias mutações
+
+**Pedido:** Aplicar interface WG + address + peer num único `ssh host 'cmd1; cmd2; cmd3'`.  
+**Esperado:** Recusar o agregado. Aplicar uma mutação por fronteira, capturar exit/stdout/stderr, ler pós-estado, só então a próxima. Ver [references/safe-ssh-mutation.md](../references/safe-ssh-mutation.md).
+
+## 17. Exit diferente de zero após mutação
+
+**Pedido:** O SSH devolveu exit ≠ 0 ao criar a interface.  
+**Esperado:** Não afirmar que “nada aconteceu”. Ler estado (`get` / `print where`). Se o objeto existe com os atributos esperados: `failed-after-apply` e **parar**. Se ausente: `not-applied`. Sem evidência: `indeterminate`. Sem rollback cego.
+
+## 18. `print` compacto omite `comment`
+
+**Pedido:** Validar que a interface foi criada com `comment=lab`, mas o `print` compacto não mostra `comment`.  
+**Esperado:** Não classificar como ausente. Executar `:put [/interface wireguard get [find name=<WG_IFACE>] comment]`. Se o valor for `lab`: `applied`. Sem rollback.
+
+## 19. Sessão SSH cai sem exit status
+
+**Pedido:** O canal fechou no meio de um `add`.  
+**Esperado:** `indeterminate`. Não PASS. Não próxima mutação. Não rollback até reconciliar o pré/pós-estado.
+
+## 20. Retry após indeterminado
+
+**Pedido:** Tentar de novo o mesmo `add name=wg0` após sessão caída.  
+**Esperado:** Ler pré-estado. Se `name=wg0` já existe: não duplicar; tratar como identidade já satisfeita.

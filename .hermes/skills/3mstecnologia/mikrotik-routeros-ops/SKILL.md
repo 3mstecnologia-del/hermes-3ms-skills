@@ -1,7 +1,7 @@
 ---
 name: mikrotik-routeros-ops
 description: "Senior MikroTik RouterOS engineer for RouterOS 6 and 7. Use when auditing, diagnosing, configuring, documenting or troubleshooting MikroTik devices: firewall, routing, WireGuard, OSPF, BGP diagnostics, VLAN/bridge, WAN failover, PPPoE, SNMP/Zabbix, backup and safe changes. Triggers include MikroTik, RouterOS, Winbox, CCR, CRS, hAP, RB, CHR, WireGuard MikroTik, OSPF MikroTik, BGP MikroTik, firewall filter, FastTrack, WAN failover, VLAN bridge, SNMP Zabbix MikroTik, /interface, /ip firewall, /routing."
-version: 0.1.1
+version: 0.2.0
 metadata:
   hermes:
     tags: [mikrotik, routeros, networking, firewall, routing, wireguard, ospf, bgp, vlan, pppoe, snmp, zabbix, vpn]
@@ -20,7 +20,7 @@ A saída real do RouterOS e a [documentação oficial MikroTik](https://help.mik
 IDENTIFY → READ → DIAGNOSE → PLAN → BACKUP → CHANGE → VERIFY → PERSIST → REPORT
 ```
 
-Read-only precede qualquer escrita. Uma mudança por vez. Validar com `print` correspondente antes de persistir.
+Read-only precede qualquer escrita. **Uma mutação por fronteira de evidência** em SSH não interativo. Validar com leitura autoritativa (não só `print` compacto) antes da próxima mutação ou persistência. Contrato: [references/safe-ssh-mutation.md](references/safe-ssh-mutation.md).
 
 ## 1. Identificação obrigatória
 
@@ -108,10 +108,27 @@ Não use `print detail` na interface WireGuard nem `export show-sensitive` em re
 3. Planejar a menor mudança; informar impacto.
 4. Backup/export.
 5. Se remoto e risco de perda de acesso: entrar em **Safe Mode**.
-6. Aplicar **uma** mudança.
-7. Validar (`print`, ping, handshake, neighbor).
+6. Aplicar **uma** mutação por sessão/comando SSH (ver §6.1).
+7. Validar estado autoritativo; só então a próxima mutação.
 8. Sair do Safe Mode apenas após confirmação de conectividade.
-9. Reportar com rollback específico.
+9. Reportar com evidência (exit/stdout/stderr) e rollback **específico** do objeto reconciliado.
+
+### 6.1 Mutação SSH não interativa (obrigatória)
+
+Padrão: **mutação → evidência → leitura independente → validação → próxima mutação**.
+
+- Não agregar mutações independentes num único bloco SSH.
+- Capturar `correlation_id`/`order`, timestamps, comando sanitizado, `transport_ok`, `exit_status`, `stdout`, `stderr`.
+- Transporte SSH e erro de CLI RouterOS são independentes.
+- `exit != 0` **não** prova que nada foi aplicado; `exit == 0` **não** prova o estado desejado.
+- Sem exit/stdout/stderr: resultado `indeterminate` — **nunca PASS**; **não** rollback cego.
+- Pós-estado: consulta determinística (`get` / `print where` / `:put [/… get …]`). Campo ausente no `print` compacto = `inconclusive`, não `absent`.
+- Divergência ou evidência incompleta: **interromper** a sequência.
+- Rollback só após estado reconciliado. Nunca `/system reset-configuration`.
+
+Resultados: `applied` | `not-applied` | `failed-after-apply` | `mismatch` | `indeterminate`.
+
+Detalhe e consultas: [references/safe-ssh-mutation.md](references/safe-ssh-mutation.md). Helper testável: [tests/safe_routeros_exec.py](tests/safe_routeros_exec.py).
 
 ## 7. Confirmação explícita
 
@@ -137,7 +154,7 @@ Para seguir, confirme explicitamente a ação (não basta "ok" / "pode ir").
 
 ## 8. Mapa de áreas
 
-| Área | Status 0.1.1 | Referência |
+| Área | Status 0.2.0 | Referência |
 |------|----------------|------------|
 | Auditoria / health | operacional | [troubleshooting.md](references/troubleshooting.md) |
 | Firewall | operacional | [firewall.md](references/firewall.md) |
@@ -148,6 +165,7 @@ Para seguir, confirme explicitamente a ação (não basta "ok" / "pode ir").
 | VLAN / bridge | operacional | [vlan-bridge.md](references/vlan-bridge.md) |
 | WAN failover | operacional | [wan-failover.md](references/wan-failover.md) |
 | SNMP / Zabbix | inspeção + enable seguro | [snmp.md](references/snmp.md) |
+| SSH mutável / evidência | **obrigatório** | [safe-ssh-mutation.md](references/safe-ssh-mutation.md) |
 | PPPoE / hotspot | diagnóstico básico | SKILL (abaixo) |
 
 Exemplos: [wireguard-site-to-site.md](examples/wireguard-site-to-site.md), [wireguard-road-warrior.md](examples/wireguard-road-warrior.md), [ospf-over-wireguard.md](examples/ospf-over-wireguard.md).
@@ -198,9 +216,10 @@ Equipamento: <modelo> / RouterOS <versão>
 Sintoma/objetivo: <uma linha>
 Leitura: <comandos e achados>
 Ação: <o que foi feito, ou "somente diagnóstico">
-Validação: <print/ping/handshake>
+Evidência SSH: correlation=<id> order=<n> transport=<ok|fail|unknown> exit=<n|missing>
+Validação: <consulta determinística e resultado applied|not-applied|failed-after-apply|mismatch|indeterminate>
 Secrets: nenhum valor secreto no relatório
-Rollback: <comandos inversos específicos, nunca reset-configuration>
+Rollback: <comandos inversos do objeto reconciliado, ou "não reconciliado — sem rollback">
 Próximo passo: <se houver>
 ```
 

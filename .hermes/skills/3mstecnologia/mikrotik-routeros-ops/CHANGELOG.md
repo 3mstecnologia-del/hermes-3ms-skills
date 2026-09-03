@@ -2,6 +2,19 @@
 
 Formato baseado em [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-09-03
+
+### Status: DEV
+
+Contrato obrigatório para mutações RouterOS via SSH não interativo (Addresses #1).
+
+- Uma mutação por fronteira de evidência; capturar transporte, exit status, stdout e stderr
+- Resultados: `applied`, `not-applied`, `failed-after-apply`, `mismatch`, `indeterminate`
+- `print` compacto que omite atributo = `inconclusive`; leitura `get`/projeção antes de falhar ou rollback
+- Sem rollback cego; sequência para em erro, divergência ou evidência incompleta
+- Referência: `references/safe-ssh-mutation.md`
+- Helper testável: `tests/safe_routeros_exec.py` (unittest, Docker ou `python3 -m unittest`)
+
 ## [0.1.1] — 2026-09-02
 
 ### Status: DEV
