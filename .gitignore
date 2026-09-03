@@ -8,7 +8,10 @@
 # Credenciais e chaves
 .env
 .env.*
+*.env
 !.env.example
+secrets/
+credentials/
 *.gpg
 *.key
 *.pem
@@ -24,7 +27,13 @@ venv/
 *.egg-info/
 .pytest_cache/
 
+# Node
+node_modules/
+
 # macOS / editor
 .DS_Store
 .idea/
 .vscode/
+
+# Material de estudo local (não versionar por padrão)
+*.pdf
