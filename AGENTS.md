@@ -4,9 +4,11 @@ Instruções para agentes de desenvolvimento que trabalham neste repositório.
 
 ## Propósito
 
-Fonte oficial de **skills** e **MCP servers** do Hermes Agent (3MS Tecnologia), com qualidade suficiente para uso interno e compartilhamento futuro com a comunidade.
+Fonte oficial de **skills** e **MCP servers** do Hermes Agent (3MS Tecnologia).
 
-Repositório GitHub pretendido: **`3mstecnologia-del/hermes-3ms-skills`**. Validar autenticação (`gh auth status`) antes de qualquer operação remota. Não presumir que o remoto já existe ou está configurado.
+Repositório público canônico: **[3mstecnologia-del/hermes-3ms-skills](https://github.com/3mstecnologia-del/hermes-3ms-skills)**.
+
+Antes de operação remota: `gh auth status`, `git remote -v`, `git status`. Origin esperado: `https://github.com/3mstecnologia-del/hermes-3ms-skills.git`.
 
 ## Estrutura
 
@@ -77,22 +79,25 @@ Errado: "Conecte na OLT 10.x.x.x do cliente X com usuário admin."
 
 Correto: "Conecte na OLT usando `<HOST>` e credenciais do ambiente."
 
-## Distribuição futura (Hermes)
+## Publicação (GitHub é a fonte canônica)
 
-GitHub será a fonte oficial. Fluxo alvo (não implementar auto-update agora):
+Fluxo normal:
 
 ```
-desenvolvimento → validação → commit → release estável
-→ Hermes detecta → valida → backup → instala → verifica → rollback se necessário
+DESENVOLVER → VALIDAR → SECRET SCAN → COMMIT → PUSH → GITHUB
 ```
 
-Commits em `main` não devem ser tratados como deploy automático em produção.
+Não fazer push de conteúdo que falhou em validação ou secret scan.
+
+Skills **DEV** podem existir no repositório público se o status estiver explícito. DEV não é homologação completa. LAB = lab/hardware controlado. STABLE = uso operacional no escopo documentado. DEPRECATED = histórico/compatibilidade.
+
+Auto-update no Hermes **não** está implementado. Commits em `main` não são deploy automático em produção.
 
 ## Git — restrições
 
-Sem autorização explícita, não executar: `git push`, criação de repo remoto, `git push --force`, `git reset --hard`, `git clean -fd`, alteração destrutiva de histórico.
+Sem autorização explícita, não executar: `git push --force`, `git reset --hard`, `git clean -fd`, alteração destrutiva de histórico.
 
-Antes de commit: `git status`, revisar secrets, confirmar que apenas arquivos do repo oficial foram alterados.
+Antes de commit: `git status`, revisar secrets, confirmar que apenas arquivos deste repositório foram alterados.
 
 ## Instalação no Hermes (referência)
 

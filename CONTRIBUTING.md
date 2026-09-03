@@ -4,7 +4,7 @@ Obrigado por contribuir com skills e MCPs para o ecossistema Hermes (3MS Tecnolo
 
 ## Objetivo do projeto
 
-Este repositório é a fonte oficial de **skills de infraestrutura** e **MCP servers** para o Hermes Agent. O material deve ser útil para operação real (ISP/telecom), seguro por padrão e adequado para compartilhamento com a comunidade.
+Este repositório público é a **fonte canônica** de skills de infraestrutura e MCP servers da 3MS Tecnologia para o Hermes Agent. Fluxo: desenvolver → validar → secret scan → commit → push → GitHub. Não enviar conteúdo que falhou na validação.
 
 ## Como propor uma nova skill
 
@@ -36,7 +36,7 @@ Use [Semantic Versioning](https://semver.org/):
 - `0.x.x` — desenvolvimento / validação
 - `1.0.0+` — estável para distribuição
 
-Status sugeridos: **DEV** → **LAB** → **STABLE** → **DEPRECATED**.
+Status: **DEV** (em desenvolvimento; pode mudar; não é homologação completa) → **LAB** (lab/hardware controlado) → **STABLE** (uso operacional no escopo documentado) → **DEPRECATED** (histórico/compatibilidade). Skills DEV podem ser públicas se o status estiver explícito.
 
 Registre versão e status em `CHANGELOG.md` e `SKILLS-CATALOG.md`.
 
