@@ -26,6 +26,8 @@ hermes-3ms-skills/
 |-------|--------|--------|-----------|
 | [`olt-intelbras-g08-ops`](.hermes/skills/3mstecnologia/olt-intelbras-g08-ops/SKILL.md) | 0.1.0 | DEV | OLT Intelbras G08 (GPON) |
 | [`mikrotik-routeros-ops`](.hermes/skills/3mstecnologia/mikrotik-routeros-ops/SKILL.md) | 0.1.1 | DEV | MikroTik RouterOS 6/7 |
+| [`network-device-cli-capture`](.hermes/skills/3mstecnologia/network-device-cli-capture/SKILL.md) | 1.0.0 | DEV | Captura segura de CLIs legadas |
+| [`secure-rtsp-camera-tools`](.hermes/skills/3mstecnologia/secure-rtsp-camera-tools/SKILL.md) | 0.1.0 | DEV | Ferramentas RTSP seguras para Hermes |
 
 Catálogo completo: [SKILLS-CATALOG.md](SKILLS-CATALOG.md).
 
