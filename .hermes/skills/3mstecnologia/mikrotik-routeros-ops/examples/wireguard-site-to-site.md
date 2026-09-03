@@ -21,9 +21,13 @@ Pré-requisito: RouterOS 7 com WireGuard. Identificar versão antes.
 | Lado | Função |
 |------|--------|
 | Servidor central | Listener UDP `<WG_PORT>` (ou DNAT no firewall da frente); rotas estáticas para `<REMOTE_LAN_A>`, `<REMOTE_LAN_B>`, … via túnel |
-| MikroTik | Peer com `endpoint=<REMOTE_ENDPOINT>:<WG_PORT>`; keepalive se estiver atrás de NAT; rotas para `<MGMT_NET>` via WG |
+| MikroTik | Peer com `endpoint-address=<REMOTE_ENDPOINT>` e `endpoint-port=<WG_PORT>`; keepalive se estiver atrás de NAT; rotas para `<MGMT_NET>` via WG |
 
 ## Allowed-address (ideia)
+
+Não confundir com rota: no RouterOS o `allowed-address` escolhe o peer e filtra origem/destino **no túnel**; a tabela `/ip route` continua obrigatória para encaminhar às LANs.
+
+Prefixos de peers **na mesma interface** não podem se sobrepor.
 
 **No servidor, peer = MikroTik:**
 
@@ -35,7 +39,7 @@ Pré-requisito: RouterOS 7 com WireGuard. Identificar versão antes.
 - IP do túnel do servidor
 - Prefixo(s) de gestão/monitoramento (`<MGMT_NET>`)
 
-Assimétricos = um lado criptografa e o outro descarta.
+Assimétricos = um lado encapsula e o outro descarta.
 
 ## MikroTik (esqueleto)
 
@@ -49,7 +53,8 @@ add address=<WG_LOCAL_IP>/<WG_PREFIX_LEN> interface=wg-mgmt
 /interface wireguard peers
 add interface=wg-mgmt \
     public-key="<REMOTE_PUBLIC_KEY>" \
-    endpoint="<REMOTE_ENDPOINT>:<WG_PORT>" \
+    endpoint-address=<REMOTE_ENDPOINT> \
+    endpoint-port=<WG_PORT> \
     allowed-address=<MGMT_NET> \
     persistent-keepalive=25s
 
@@ -71,7 +76,7 @@ Trocar apenas **chaves públicas**. Private keys ficam em cada caixa.
 
 ## NAT/CGNAT no site remoto
 
-MikroTik inicia o túnel (`endpoint` + `persistent-keepalive`). O servidor tem IP alcançável (público ou 1:1). Sem isso, handshake não sobe — ver troubleshooting A/D em [references/wireguard.md](../references/wireguard.md).
+MikroTik inicia o túnel (`endpoint-address` + `endpoint-port` + `persistent-keepalive`). O servidor tem IP alcançável (público ou 1:1). Sem isso, handshake não sobe — ver troubleshooting A/D em [references/wireguard.md](../references/wireguard.md).
 
 ## Validação
 

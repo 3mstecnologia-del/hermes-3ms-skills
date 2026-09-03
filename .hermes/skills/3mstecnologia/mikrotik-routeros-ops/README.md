@@ -23,7 +23,7 @@ Qualquer dispositivo com RouterOS (RB, hAP, CCR, CRS, CHR, etc.). A skill não a
 | RouterOS 6 | DEV — comandos clássicos | Sem WireGuard nativo; BGP/OSPF na árvore antiga |
 | RouterOS 7 | DEV — comandos novos | WireGuard ≥ 7.1; BGP connection/session; OSPF interface-template |
 
-**Firmware homologado em laboratório:** ainda não. Versão **0.1.0 / DEV**.
+**Firmware homologado em laboratório:** ainda não. Versão **0.1.1 / DEV**.
 
 A saída real do RouterOS e a [documentação oficial](https://help.mikrotik.com/) prevalecem sobre exemplos desta skill.
 
@@ -57,7 +57,7 @@ A saída real do RouterOS e a [documentação oficial](https://help.mikrotik.com
 ## Limitações
 
 - Status **DEV**: não validado contra um firmware específico em laboratório
-- BGP em 0.1.0 é diagnóstico, não design de política de roteamento completo
+- BGP em 0.1.x é diagnóstico, não design de política de roteamento completo
 - Não misturar sintaxe v6/v7
 - Não usar `/system reset-configuration` como “rollback”
 

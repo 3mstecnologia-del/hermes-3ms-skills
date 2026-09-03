@@ -1,7 +1,7 @@
 ---
 name: mikrotik-routeros-ops
 description: "Senior MikroTik RouterOS engineer for RouterOS 6 and 7. Use when auditing, diagnosing, configuring, documenting or troubleshooting MikroTik devices: firewall, routing, WireGuard, OSPF, BGP diagnostics, VLAN/bridge, WAN failover, PPPoE, SNMP/Zabbix, backup and safe changes. Triggers include MikroTik, RouterOS, Winbox, CCR, CRS, hAP, RB, CHR, WireGuard MikroTik, OSPF MikroTik, BGP MikroTik, firewall filter, FastTrack, WAN failover, VLAN bridge, SNMP Zabbix MikroTik, /interface, /ip firewall, /routing."
-version: 0.1.0
+version: 0.1.1
 metadata:
   hermes:
     tags: [mikrotik, routeros, networking, firewall, routing, wireguard, ospf, bgp, vlan, pppoe, snmp, zabbix, vpn]
@@ -90,7 +90,7 @@ Rollback **não** é `/system reset-configuration`. Rollback = reverter a mudan�
 Nunca imprimir ou armazenar em relatórios:
 
 - senhas, secrets PPP/hotspot, communities SNMP reais;
-- **private keys WireGuard** — usar apenas public-key e placeholders `<WG_PRIVATE_KEY>`;
+- **private-key e preshared-key WireGuard** — só public-key e placeholders `<WG_PRIVATE_KEY>`;
 - arquivos `.backup` / export com `show-sensitive`.
 
 Para obter a chave pública sem expor a privada:
@@ -99,7 +99,7 @@ Para obter a chave pública sem expor a privada:
 :put [/interface wireguard get <WG_IFACE> public-key]
 ```
 
-Não use `print detail` de WireGuard em relatórios.
+Não use `print detail` na interface WireGuard nem `export show-sensitive` em relatórios. Em peers, omita `preshared-key`.
 
 ## 6. Fluxo de alteração
 
@@ -137,7 +137,7 @@ Para seguir, confirme explicitamente a ação (não basta "ok" / "pode ir").
 
 ## 8. Mapa de áreas
 
-| Área | Status 0.1.0 | Referência |
+| Área | Status 0.1.1 | Referência |
 |------|----------------|------------|
 | Auditoria / health | operacional | [troubleshooting.md](references/troubleshooting.md) |
 | Firewall | operacional | [firewall.md](references/firewall.md) |
@@ -168,15 +168,15 @@ Exemplos: [wireguard-site-to-site.md](examples/wireguard-site-to-site.md), [wire
 /log print where topics~"error|critical"
 ```
 
-**WireGuard (somente v7):**
+**WireGuard (somente v7) — inspeção sem secrets:**
 
 ```rsc
 /interface wireguard print
+:put [/interface wireguard get <WG_IFACE> public-key]
 /interface wireguard peers print
-/interface wireguard peers print detail
 ```
 
-Em `peers print detail`, reporte `current-endpoint-address`, `last-handshake`, `rx`/`tx`. **Omita `private-key`.**
+Não usar `print detail` na interface (expõe `private-key`). Nos peers, reportar `endpoint-address`, `endpoint-port`, `current-endpoint-address`, `allowed-address`, `last-handshake`, `rx`/`tx`. **Omitir `private-key` e `preshared-key`.** Antes de adicionar peer, conferir overlap de `allowed-address` na mesma interface.
 
 **OSPF / BGP:** ver referências; escolher árvore conforme versão.
 

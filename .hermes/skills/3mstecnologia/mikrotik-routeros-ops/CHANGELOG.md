@@ -2,6 +2,19 @@
 
 Formato baseado em [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] — 2026-09-02
+
+### Status: DEV
+
+Correção de orientação WireGuard antes da primeira instalação no Hermes.
+
+- Sintaxe de peer RouterOS 7: `endpoint-address` + `endpoint-port` (não `endpoint=host:port` como forma principal)
+- `allowed-address` documentado como filtro/seleção de peer — **não** substitui `/ip route`; overlap na mesma interface é conflito
+- Inspeção sem `print detail` na interface; omitir `private-key` e `preshared-key`
+- `0.0.0.0/0` no cliente WG só em full-tunnel explícito, com alertas
+- OSPF: `type=ptp` como valor documentado no ROS 7
+- Teste 15: overlap de `allowed-address`
+
 ## [0.1.0] — 2026-09-02
 
 ### Status: DEV

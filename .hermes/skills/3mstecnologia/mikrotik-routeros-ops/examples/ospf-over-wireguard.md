@@ -32,7 +32,7 @@ add name=backbone instance=ospf-mgmt area-id=0.0.0.0
 add interfaces=wg-mgmt area=backbone type=ptp
 ```
 
-Nomes de propriedades (`type=ptp` vs `point-to-point`) **devem ser confirmados com `?`**. Se o comando falhar, não inventar o enum.
+`type=ptp` é o valor documentado no RouterOS 7 para enlace ponto a ponto (adequado a WireGuard). Se o firmware rejeitar o comando, validar com `?` nesse equipamento — não inventar outro enum.
 
 ## RouterOS 6
 

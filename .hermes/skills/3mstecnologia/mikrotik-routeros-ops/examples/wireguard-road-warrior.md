@@ -24,13 +24,30 @@ add interface=wg-rw public-key="<REMOTE_PUBLIC_KEY>" \
 
 Keepalive: no **cliente** se ele estiver em NAT.
 
-## Cliente
+Não colocar `0.0.0.0/0` no `allowed-address` do peer no MikroTik como padrão (conflitaria com outros peers e não substitui rotas). O usual é só `<WG_CLIENT_IP>/32`.
 
-AllowedIPs = `<WG_SERVER_IP>/32` + LANs desejadas, **ou** `0.0.0.0/0` se full-tunnel (implica NAT/firewall no MikroTik e rota default).
+## Cliente (split-tunnel — padrão deste exemplo)
+
+AllowedIPs no cliente = `<WG_SERVER_IP>/32` + LANs desejadas. Sem default pelo túnel.
+
+## Cliente full-tunnel (exceção — não usar sem pedido explícito)
+
+Só se o objetivo for **toda** a internet do cliente sair pelo MikroTik. No cliente, AllowedIPs pode incluir `0.0.0.0/0`. Isso **não** é o default desta skill.
+
+Antes de aplicar, avisar e exigir confirmação:
+
+- **Rota default** do cliente passa a ser o túnel — perda do caminho direto à WAN local.
+- **Gestão:** SSH/Winbox para o MikroTik pelo IP público pode falhar se o return path mudar; planejar acesso pela LAN/WG ou console.
+- **NAT:** o MikroTik precisa masquerade/srcnat do tráfego WG rumo à WAN.
+- **DNS:** resolver do cliente deve continuar alcançável (ou ser o do roteador).
+- **Policy routing / FastTrack:** podem interferir no tráfego encapsulado.
+- Risco de **perda de conectividade** se o túnel cair e o default estiver no WG.
+
+No MikroTik, mesmo em full-tunnel do cliente, o peer continua com `allowed-address=<WG_CLIENT_IP>/32` (origem do cliente), **não** `0.0.0.0/0` na mesma interface se houver outros peers.
 
 ## Validação
 
-Handshake; ping `<WG_SERVER_IP>`; ping LAN se split-tunnel incluir.
+Handshake; ping `<WG_SERVER_IP>`; ping LAN se split-tunnel incluir. Não expor private-key/preshared-key.
 
 ## Rollback
 

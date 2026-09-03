@@ -25,7 +25,7 @@ hermes-3ms-skills/
 | Skill | Versão | Status | Descrição |
 |-------|--------|--------|-----------|
 | [`olt-intelbras-g08-ops`](.hermes/skills/3mstecnologia/olt-intelbras-g08-ops/SKILL.md) | 0.1.0 | DEV | OLT Intelbras G08 (GPON) |
-| [`mikrotik-routeros-ops`](.hermes/skills/3mstecnologia/mikrotik-routeros-ops/SKILL.md) | 0.1.0 | DEV | MikroTik RouterOS 6/7 |
+| [`mikrotik-routeros-ops`](.hermes/skills/3mstecnologia/mikrotik-routeros-ops/SKILL.md) | 0.1.1 | DEV | MikroTik RouterOS 6/7 |
 
 Catálogo completo: [SKILLS-CATALOG.md](SKILLS-CATALOG.md).
 

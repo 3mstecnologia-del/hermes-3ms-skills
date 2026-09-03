@@ -2,9 +2,9 @@
 
 Disponível em **RouterOS 7** (`/interface wireguard`). Em RouterOS 6, não oferecer esta árvore.
 
-Nunca exibir **private key** em relatórios. Placeholders:
+Nunca exibir **private-key** nem **preshared-key** em relatórios. Placeholders:
 
-`<WG_PRIVATE_KEY>` `<WG_PUBLIC_KEY>` `<REMOTE_PUBLIC_KEY>` `<REMOTE_ENDPOINT>` `<WG_PORT>` `<WG_LOCAL_IP>` `<REMOTE_SUBNET>` `<WG_IFACE>`
+`<WG_PRIVATE_KEY>` `<WG_PUBLIC_KEY>` `<REMOTE_PUBLIC_KEY>` `<REMOTE_ENDPOINT>` `<WG_PORT>` `<WG_LOCAL_IP>` `<REMOTE_SUBNET>` `<WG_IFACE>` `<WG_PREFIX_LEN>`
 
 ## Conceitos
 
@@ -13,40 +13,49 @@ Nunca exibir **private key** em relatórios. Placeholders:
 | interface | Túnel L3 (`/interface wireguard`) |
 | private/public key | Par da interface local; só a **pública** é compartilhada |
 | peer | Outra ponta (`/interface wireguard peers`) |
-| endpoint | Host:porta UDP do peer (pode ser dinâmico) |
-| endpoint-port / listen-port | UDP; `listen-port` local = `<WG_PORT>` |
-| allowed-address | Prefixos **permitidos no túnel** (criptografia + roteamento WG) |
+| endpoint-address | Host ou IP UDP do peer (pode ser dinâmico / vazio se o peer inicia) |
+| endpoint-port | Porta UDP do peer (`<WG_PORT>` no remoto) |
+| listen-port | Porta UDP local da interface |
+| allowed-address | Seleção de peer + filtro criptográfico (não é a tabela de rotas) — ver abaixo |
 | persistent-keepalive | Keepalive UDP; essencial se o peer (ou este lado) está atrás de NAT/CGNAT |
 | routing | Rotas OS para `<REMOTE_SUBNET>` via interface WG |
 | firewall | **input** UDP `<WG_PORT>`; **forward** entre WG e LAN |
 | NAT | Só quando não há roteamento simétrico; evitar NAT no túnel se o objetivo é alcançar LANs privadas |
 
-`allowed-address` deve incluir os prefixos que **entram e saem** pelo peer. Falta de prefixo = handshake possível e tráfego filtrado pelo WG.
+## allowed-address (não é rota)
 
-## Diagnóstico (read-only)
+No RouterOS, `allowed-address` no peer **não substitui** `/ip route` (nem `/ipv6 route`).
+
+Ele faz duas coisas no **contexto da interface WireGuard**:
+
+1. **Origem (entrada):** quais endereços/prefixos são aceitos como tráfego **vindo daquele peer** (decapsulado).
+2. **Destino (saída):** quais destinos de tráfego **saindo pelo túnel** são associados **àquele peer** (qual chave pública encapsula o pacote).
+
+Consequências:
+
+- Sem o prefixo em `allowed-address`, o peer pode ter handshake e mesmo assim o tráfego ser descartado ou ir para o peer errado.
+- Com o prefixo em `allowed-address` mas **sem rota** no RouterOS para esse destino via a interface WG, o pacote pode nem chegar ao WireGuard.
+- **Peers da mesma interface não podem ter `allowed-address` sobrepostos.** Overlap = o RouterOS não consegue decidir o peer. Antes de `add`, listar peers existentes e comparar prefixos. Se houver interseção, **não criar** o peer; pedir revisão.
+
+Não ensinar `allowed-address=0.0.0.0/0` como padrão. Full-tunnel só no cenário explícito (road-warrior), com os alertas de rota default, gestão, NAT, DNS e lockout.
+
+Lista (vírgula) = vários prefixos **daquele** peer. Cada prefixo de LAN remota que o roteador deve encaminhar ainda precisa de rota OS.
+
+## Diagnóstico (read-only) — sem secrets
+
+Não usar `print detail` na **interface** WireGuard (expõe `private-key`). Não usar `export show-sensitive`. Em peers, não reportar `preshared-key` (redigir se aparecer).
 
 ```rsc
 :put [/system resource get version]
 /interface wireguard print
+:put [/interface wireguard get <WG_IFACE> public-key]
 /interface wireguard peers print
 /ip address print where interface=<WG_IFACE>
 /ip route print where gateway=<WG_IFACE>
 /ip firewall filter print where dst-port=<WG_PORT>
 ```
 
-Handshake e contadores (omitir chaves privadas no relatório):
-
-```rsc
-/interface wireguard peers print
-```
-
-Campos úteis: `current-endpoint-address`, `last-handshake`, `rx`, `tx`. Público do peer: `public-key` (é a chave **pública** do remoto — ok reportar).
-
-Chave pública **local**:
-
-```rsc
-:put [/interface wireguard get <WG_IFACE> public-key]
-```
+Campos úteis nos peers: `public-key`, `endpoint-address`, `endpoint-port`, `current-endpoint-address`, `allowed-address`, `last-handshake`, `rx`, `tx`. **Omitir** `private-key` e `preshared-key`.
 
 ## Criação segura (esqueleto)
 
@@ -62,10 +71,13 @@ add address=<WG_LOCAL_IP>/<WG_PREFIX_LEN> interface=<WG_IFACE>
 /interface wireguard peers
 add interface=<WG_IFACE> \
     public-key="<REMOTE_PUBLIC_KEY>" \
-    endpoint="<REMOTE_ENDPOINT>:<WG_PORT>" \
+    endpoint-address=<REMOTE_ENDPOINT> \
+    endpoint-port=<WG_PORT> \
     allowed-address=<REMOTE_SUBNET> \
     persistent-keepalive=25s
 ```
+
+Antes do `add`: `/interface wireguard peers print where interface=<WG_IFACE>` e garantir que `<REMOTE_SUBNET>` **não intersecta** `allowed-address` de outro peer na mesma interface.
 
 O RouterOS gera o par de chaves da interface ao criar. Extraia só `public-key` para o outro lado.
 
@@ -108,13 +120,15 @@ Peer móvel: `allowed-address` no servidor = IP do cliente no túnel (`<WG_CLIEN
 
 ## Servidor central ↔ MikroTik remoto
 
-Padrão: concentrador (Linux/MikroTik/CHR) com `listen-port` público ou port-forward; MikroTik em site com NAT/CGNAT inicia o túnel (`endpoint` + `persistent-keepalive`). Redes privadas atrás do gateway são anunciadas por **rotas estáticas** no servidor (ou OSPF — [examples/ospf-over-wireguard.md](../examples/ospf-over-wireguard.md)).
+Padrão: concentrador (Linux/MikroTik/CHR) com `listen-port` público ou port-forward; MikroTik em site com NAT/CGNAT inicia o túnel (`endpoint-address` + `endpoint-port` + `persistent-keepalive`). Redes privadas atrás do gateway são anunciadas por **rotas estáticas** no servidor (ou OSPF — [examples/ospf-over-wireguard.md](../examples/ospf-over-wireguard.md)).
 
 Útil para monitoramento, automação, administração remota e coletores SNMP/Zabbix — sem NAT da LAN para a internet.
 
 ## Múltiplas redes atrás do peer
 
-`allowed-address` aceita lista (vírgula). Cada prefixo também precisa de rota no lado que origina o tráfego. Esquecer a rota OS = handshake OK, ping falha.
+`allowed-address` aceita lista (vírgula) **no mesmo peer**. Cada prefixo ainda precisa de rota no RouterOS se o tráfego for encaminhado (não originado só no próprio roteador). Esquecer a rota OS = handshake OK, ping à LAN falha.
+
+Não sobrepor esses prefixos com outro peer da mesma interface.
 
 ## MTU
 
@@ -128,9 +142,9 @@ Túnel UDP + overhead. Sintomas: ping curto ok, TCP/HTTPS falha ou stall. Ajusta
 
 ### A) Sem handshake (`last-handshake` vazio / antigo demais)
 
-- `endpoint` e DNS resolvem?
+- `endpoint-address` / DNS resolvem?
 - UDP `<WG_PORT>` chega? (firewall **input** no listener; ACL no provedor)
-- `listen-port` correto nos dois lados
+- `listen-port` local vs `endpoint-port` do peer
 - `public-key` trocada (chave do **outro** lado no peer)
 - NAT upstream / CGNAT: keepalive no lado sem IP público
 - Relógio do sistema (handshake usa tempo; NTP ajuda operação, mas WG não é TLS)
@@ -158,7 +172,7 @@ Túnel UDP + overhead. Sintomas: ping curto ok, TCP/HTTPS falha ou stall. Ajusta
 
 ### E) Handshake antigo / intermitente
 
-- WAN oscilando, DDNS do endpoint, firewall stateful, NAT mapping expirando, keepalive insuficiente, CPU/watchdog
+- WAN oscilando, DDNS de `endpoint-address`, firewall stateful, NAT mapping expirando, keepalive insuficiente, CPU/watchdog
 
 ## Validação pós-config
 
