@@ -1,14 +1,14 @@
 ---
 name: network-device-cli-capture
 description: "Capture legacy network-device CLI configurations safely."
-version: 1.0.0
+version: 1.1.0
 author: Matheus Schmitt, Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
   hermes:
     tags: [Networking, SSH, CLI, Capture, Security]
-    related_skills: []
+    related_skills: [mikrotik-routeros-ops]
 ---
 
 # Legacy Network-Device CLI Capture
@@ -55,6 +55,25 @@ Use for read-only capture of sensitive running configurations from network appli
    - Confirm raw capture mode `0600` and parent workspace mode `0700`.
    - Remove incomplete temporary captures rather than leaving them alongside a validated backup.
    - Report only status, safe path, byte/line count, and routing outcome.
+
+## Evidence for any CLI execution
+
+This skill is **read-only**. It does not apply RouterOS `add`/`set`/`remove`. When it wraps SSH (or when a mutation skill asks it to record a command boundary), each execution must preserve:
+
+- correlation id and order (if part of a sequence);
+- timestamps;
+- sanitized command text;
+- transport success/failure (TCP/SSH), independent of CLI errors;
+- exit status (or explicit `missing`);
+- stdout and stderr (or explicit `missing`).
+
+Missing exit status, stdout, or stderr is **indeterminate**, never PASS.
+
+Compact CLI tables that omit a field are **inconclusive**, not proof of absence. Use a deterministic follow-up query (`get`, `print where`, or a single-property projection) before declaring failure. Do not store broad `print detail` / `show running-config` in public logs.
+
+Redact before persistence: passwords, tokens, SNMP communities, private keys, PSKs.
+
+Mutable RouterOS workflows belong to [`mikrotik-routeros-ops`](../mikrotik-routeros-ops/SKILL.md) ([safe-ssh-mutation.md](../mikrotik-routeros-ops/references/safe-ssh-mutation.md)): one mutation per evidence boundary, then an independent state read.
 
 ## Pitfalls
 

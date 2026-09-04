@@ -23,7 +23,7 @@ Qualquer dispositivo com RouterOS (RB, hAP, CCR, CRS, CHR, etc.). A skill não a
 | RouterOS 6 | DEV — comandos clássicos | Sem WireGuard nativo; BGP/OSPF na árvore antiga |
 | RouterOS 7 | DEV — comandos novos | WireGuard ≥ 7.1; BGP connection/session; OSPF interface-template |
 
-**Firmware homologado em laboratório:** ainda não. Versão **0.1.1 / DEV**.
+**Firmware homologado em laboratório:** ainda não. Versão **0.2.0 / DEV**.
 
 A saída real do RouterOS e a [documentação oficial](https://help.mikrotik.com/) prevalecem sobre exemplos desta skill.
 
@@ -43,6 +43,7 @@ A saída real do RouterOS e a [documentação oficial](https://help.mikrotik.com
 
 ## Áreas cobertas
 
+- Mutação SSH atômica + evidência (uma mudança por sessão; pós-estado autoritativo)
 - Core operations (identify, backup, Safe Mode)
 - Firewall (input/forward/output, raw, mangle, NAT, FastTrack)
 - Routing (connected, static, recursive, policy)
@@ -60,6 +61,7 @@ A saída real do RouterOS e a [documentação oficial](https://help.mikrotik.com
 - BGP em 0.1.x é diagnóstico, não design de política de roteamento completo
 - Não misturar sintaxe v6/v7
 - Não usar `/system reset-configuration` como “rollback”
+- SSH mutável: ver [references/safe-ssh-mutation.md](references/safe-ssh-mutation.md)
 
 ## Instalação
 
@@ -89,6 +91,7 @@ Novas áreas ou correções de sintaxe: atualizar `CHANGELOG.md`, `SKILLS-CATALO
 
 ## Roadmap
 
+- Homologar o contrato SSH atômico em RouterOS 7.x real (Madalena Labs → LAB)
 - Homologar em RouterOS 7.x e 6.x reais (promover a LAB)
 - Ampliar BGP (filters, communities) após validação
 - Templates Docker para testes de MCP futuros (fora desta skill)
