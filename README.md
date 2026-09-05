@@ -28,6 +28,7 @@ hermes-3ms-skills/
 | [`mikrotik-routeros-ops`](.hermes/skills/3mstecnologia/mikrotik-routeros-ops/SKILL.md) | 0.1.1 | DEV | MikroTik RouterOS 6/7 |
 | [`network-device-cli-capture`](.hermes/skills/3mstecnologia/network-device-cli-capture/SKILL.md) | 1.0.0 | DEV | Captura segura de CLIs legadas |
 | [`secure-rtsp-camera-tools`](.hermes/skills/3mstecnologia/secure-rtsp-camera-tools/SKILL.md) | 0.1.0 | DEV | Ferramentas RTSP seguras para Hermes |
+| [`infisical-machine-identity`](.hermes/skills/3mstecnologia/infisical-machine-identity/SKILL.md) | 0.1.0 | DEV | Universal Auth e persistência segura de Machine Identity |
 
 Catálogo completo: [SKILLS-CATALOG.md](SKILLS-CATALOG.md).
 
