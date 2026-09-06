@@ -9,8 +9,9 @@ Repositório: **hermes-3ms-skills** · Namespace: **3mstecnologia**
 | [`network-device-cli-capture`](.hermes/skills/3mstecnologia/network-device-cli-capture/SKILL.md) | 1.0.0 | DEV | Genérico | Appliances de rede | SSH/CLI | por alvo | Revisão sanitizada | Captura read-only com SSH legado, prompt, paginação e evidência local restrita |
 | [`secure-rtsp-camera-tools`](.hermes/skills/3mstecnologia/secure-rtsp-camera-tools/SKILL.md) | 0.1.0 | DEV | Genérico | Câmeras/NVRs RTSP | RTSP, FFmpeg, Docker | por alvo | Revisão sanitizada | Snapshot e status por frame com helper loopback e secrets em runtime |
 | [`infisical-machine-identity`](.hermes/skills/3mstecnologia/infisical-machine-identity/SKILL.md) | 0.1.0 | DEV | Infisical | Machine Identity | Universal Auth, API/CLI, Docker | por ambiente | Revisão sanitizada | Autenticação read-only, listagem sem valores e persistência root-only fora do Git |
+| [`proxmox-ve-cluster-ops`](.hermes/skills/3mstecnologia/proxmox-ve-cluster-ops/SKILL.md) | 0.1.0 | DEV | Proxmox | Proxmox VE (cluster) | PVE API 8.x, SSH | PVE 8.2.7 (cluster do cliente) | Validado 2026-09-06 (read-only) | Operação de cluster PVE via API+SSH, read-only por defecto: quórum, nodos, VMs/CTs, storage, tasks, diagnóstico e preparação de cambios controlados |
 
-**Acionamento no Hermes:** `/skill olt-intelbras-g08-ops` · `/skill mikrotik-routeros-ops` · `/skill network-device-cli-capture` · `/skill secure-rtsp-camera-tools` · `/skill infisical-machine-identity`
+**Acionamento no Hermes:** `/skill olt-intelbras-g08-ops` · `/skill mikrotik-routeros-ops` · `/skill network-device-cli-capture` · `/skill secure-rtsp-camera-tools` · `/skill infisical-machine-identity` · `/skill proxmox-ve-cluster-ops`
 
 ### Legenda de status
 
