@@ -1,12 +1,12 @@
 ---
 name: proxmox-ve-cluster-ops
-description: "Operate a Proxmox VE cluster via API+SSH (read-only by default). Use when working with Proxmox PVE: cluster status, quorum, nodes, VMs, LXC containers, storage, tasks, resource audit, or preparing controlled VM/CT changes."
-version: 0.1.0
+description: "Operate a Proxmox VE cluster via API+SSH (read-only by default) and integrate with Zabbix. Use for cluster status, quorum, nodes, VMs, LXC containers, storage, tasks, resource audit, capacity alerts, or Zabbix onboarding of a PVE cluster."
+version: 0.2.0
 metadata:
   hermes:
-    tags: [proxmox, pve, virtualization, cluster, api, ssh, read-only, hypervisor]
+    tags: [proxmox, pve, virtualization, cluster, api, ssh, read-only, hypervisor, zabbix, monitoring]
     status: DEV
-    related_skills: [infisical-machine-identity]
+    related_skills: [infisical-machine-identity, zabbix-snmp-monitoring]
 ---
 
 # Proxmox VE Cluster Operations
@@ -91,6 +91,29 @@ Usar el helper vía la herramienta `terminal` de Hermes. Si se resuelven credenc
 8. Reportar con líneas PASS/FAIL objetivas y fuente (API vs SSH).
 
 Criterio de completitud: cada ítem del pedido tiene un comando y su salida verificada; nada se asume sin lectura.
+
+## Integración con Zabbix (onboarding de un cluster PVE)
+
+El template oficial **`Proxmox VE by HTTP`** (HTTP agent, type 19) descubre el clúster completo desde UN host: quórum, nodos, VMs, CTs, storage — con la API `8006` y un **token API least-privilege**. NO dupliques coleta creando N hosts con el template HTTP (cada uno redescubriría todo). Patrón validado en un cluster PVE 8.2.7 del cliente:
+
+1. **Token mínimo en PVE**: usuario propio (p. ej. `pve-monitor@pve`) con role custom de auditoría (`Datastore.Audit, Sys.Audit, VM.Audit`) y token con ACL explícita en `/` porque con `privsep=1` el token NO hereda la ACL del usuario:
+   ```bash
+   pveum user add pve-monitor@pve --comment "Zabbix 7.0 Proxmox VE by HTTP (read-only)"
+   pveum role add PveMonitorAudit --privs Datastore.Audit,Sys.Audit,VM.Audit
+   pveum acl modify / --token "pve-monitor@pve!zabbix-http" --role PveMonitorAudit
+   pveum user token add pve-monitor@pve zabbix-http --privsep 1   # capturar secret (se muestra UNA vez)
+   ```
+2. **Cofre**: persistir `PVE_0X_ZABBIX_TOKEN_ID` y `..._SECRET`.
+3. **1 host cluster** en Zabbix (grupos `Hypervisors`, grupo del cliente) con template `Proxmox VE by HTTP` y macros: `{$PVE.URL.HOST}`, `{$PVE.URL.PORT}`, `{$PVE.TOKEN.ID}`, `{$PVE.TOKEN.SECRET}`.
+4. **Capacidad de storage**: el template emite triggers `Storage [<node>/<storage>] high filesystem space usage` con macro `{$PVE.STORAGE.PUSE.MAX.WARN:"<node>/<storage>"}` (con contexto). Para alertar antes del default (90%) define la macro **con contexto por storage** en el host cluster, p. ej. `{$PVE.STORAGE.PUSE.MAX.WARN:"pve01/disco_ssd"}=80`. Verificar soporte de RBD compartido: el item `proxmox.node.disk` del LLD storage puede quedar unsupported en pools RBD (valor del endpoint `/nodes/<node>/storage/<pool>/status` → `used`/`total`). Si el trigger no dispara, usar una macro de host o item HTTP dedicado sobre ese endpoint.
+5. **Hosts de nodo separados** (opcional, para SO del hipervisor): `zabbix-agent2` ya instalado + template `Linux by Zabbix agent` + `ICMP Ping`. En PVE la config agent2 suele venir con `Server=`/`ServerActive=` apuntando a un server; verifica con el LOG qué IP de origen usa el Zabbix real para el passive check y ajusta `Server=` a esa(s) origen(es) (no solo al IP del server en otra subred/NAT — el passive check falla "empty response" si la origem de red no está en `Server=`).
+6. **Validación real** (no confiar en `host.create`): leer availability (`available=2` erro), `agent.ping`/`system.uptime` con `lastclock` reciente, y triggers FIRE de storage; re-leer macros para confirmar que sobrevivieron.
+
+### Trampas de integración
+- **host.update con `macros` sustituye TODAS las macros del host**: enviar solo un subconjunto borra las demás. Re-relanzar SIEMPRE el conjunto completo (todas las `{$PVE.*}` + las custom por storage).
+- Cuenta de macros: al sobrescribir threshold de storage, incluye las 4 macros PVE de auth/URL junto con las de threshold en el MISMO update, o pierdes la coleta HTTP del template (itens pasan unsupported / "URL rejected").
+- Item HTTP agent manual: type correcto es **19** (no 18=simple check). Para ITEM DEPENDIENTE el tipo es 18 con `master_itemid` + `delay:"0"` y preprocess JSONPath `type` **12** con `.first()` (no 11). El tipo 11 (JSONPath) en item.create exige `master_itemid`; un item no-dependiente con JSONPath falla.
+- El host name sanitizado en Zabbix no admite `+` ni caracteres no-ASCII (usar `Proxmox-<CLUSTER>`).
 
 ## Escritura (preparada, NO ejecutada por defecto)
 
