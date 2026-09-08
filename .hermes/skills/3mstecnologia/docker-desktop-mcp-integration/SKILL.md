@@ -36,9 +36,13 @@ docker mcp profile tools hermes_docker_readonly \
 docker mcp feature disable dynamic-tools
 hermes mcp add docker_mcp --command docker --connect-timeout 30 \
   --args mcp gateway run --profile hermes_docker_readonly
+hermes config set mcp_servers.docker_mcp.tools.include '["fetch_docker_docs"]'
+hermes config set mcp_servers.docker_mcp.tools.resources false
+hermes config set mcp_servers.docker_mcp.tools.prompts false
+hermes config set mcp_servers.docker_mcp.trust untrusted
 ```
 
-Quando Hermes perguntar se deve habilitar a ferramenta, confirme somente as ferramentas aprovadas.
+Quando Hermes perguntar se deve habilitar a ferramenta, confirme somente as ferramentas aprovadas. A allowlist deve existir nos dois lados: profile Docker e filtro `tools.include` do Hermes.
 
 ## Validação
 
