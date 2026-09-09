@@ -61,6 +61,8 @@ Campos úteis nos peers: `public-key`, `endpoint-address`, `endpoint-port`, `cur
 
 Não aplicar em produção sem IPs e portas do ambiente.
 
+Cada `add`/`set` abaixo é **uma mutação**. Em SSH não interativo: uma por sessão, evidência (exit/stdout/stderr), depois `get` do objeto — ver [safe-ssh-mutation.md](safe-ssh-mutation.md). Não colar o bloco inteiro como um único comando remoto.
+
 ```rsc
 /interface wireguard
 add name=<WG_IFACE> listen-port=<WG_PORT> comment="mgmt-tunnel"

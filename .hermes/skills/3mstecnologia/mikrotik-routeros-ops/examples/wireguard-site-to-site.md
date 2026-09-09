@@ -43,6 +43,8 @@ Assimétricos = um lado encapsula e o outro descarta.
 
 ## MikroTik (esqueleto)
 
+Em SSH não interativo, cada `add` é uma mutação com validação própria ([safe-ssh-mutation.md](../references/safe-ssh-mutation.md)). O bloco abaixo é a **lista planejada**, não um único comando agregado.
+
 ```rsc
 /interface wireguard
 add name=wg-mgmt listen-port=<WG_PORT>
